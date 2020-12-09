@@ -53,26 +53,73 @@ function initMap(): void {
 	    mapTypeId: "terrain",
 	}
     );
-    
-    // Construct the circle for each value in citymap.
-    // Note: We scale the area of the circle based on the population.
-/*    for (const city in citymap) {
-	// Add the circle for this city to the map.
-	const cityCircle = new google.maps.Circle({
-	    strokeColor: "#FF0000",
-	    strokeOpacity: 0.8,
-	    strokeWeight: 2,
-	    fillColor: "#FF0000",
-	    fillOpacity: 0.35,
-	    map,
-	    center: citymap[city].center,
-	    radius: Math.sqrt(citymap[city].population) * 100,
-	});
-    }*/
-    
+        
     google.maps.event.addListener(map, "click", (event) => {
 	addCircle(event.latLng, map);
     });
+
+    // Create the search box and link it to the UI element.
+    const input = document.getElementById("pac-input") as HTMLInputElement;
+    const searchBox = new google.maps.places.SearchBox(input);
+    map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+    // Bias the SearchBox results towards current map's viewport.
+    map.addListener("bounds_changed", () => {
+	searchBox.setBounds(map.getBounds() as google.maps.LatLngBounds);
+    });
+
+    let markers: google.maps.Marker[] = [];
+  // [START maps_places_searchbox_getplaces]
+  // Listen for the event fired when the user selects a prediction and retrieve
+  // more details for that place.
+    searchBox.addListener("places_changed", () => {
+	const places = searchBox.getPlaces();
+	
+	if (places.length == 0) {
+	    return;
+	}
+	
+	// Clear out the old markers.
+	markers.forEach((marker) => {
+	    marker.setMap(null);
+	});
+	markers = [];
+
+	    // For each place, get the icon, name and location.
+	const bounds = new google.maps.LatLngBounds();
+	places.forEach((place) => {
+	    if (!place.geometry) {
+		console.log("Returned place contains no geometry");
+		return;
+	    }
+	    const icon = {
+		url: place.icon as string,
+		size: new google.maps.Size(71, 71),
+		origin: new google.maps.Point(0, 0),
+		anchor: new google.maps.Point(17, 34),
+		scaledSize: new google.maps.Size(25, 25),
+	    };
+	    
+	    // Create a marker for each place.
+	    markers.push(
+		new google.maps.Marker({
+		    map,
+		    icon,
+		    title: place.name,
+		    position: place.geometry.location,
+		})
+	    );
+
+	    if (place.geometry.viewport) {
+		// Only geocodes have viewport.
+		bounds.union(place.geometry.viewport);
+	    } else {
+		bounds.extend(place.geometry.location);
+	    }
+	});
+	map.fitBounds(bounds);
+    });
+    // [END maps_places_searchbox_getplaces]
 }
 
 let geographyCircle: google.maps.Circle | null = null;
@@ -83,16 +130,27 @@ function addCircle(location: google.maps.LatLngLiteral, map: google.maps.Map) {
     let wind : number
     let height : number
     let geographyVolume : number
-    let groundRiskBufferRadius : number
 
     wind = Number($("#inputMaxWind").val())
     height = Number($("#inputMaxHeight").val())
     geographyVolume = Number($("#inputGeographyVolume").val())
 
-    let vm = 12 + wind
+    let vm = 12 + wind / 3.6
 
-    groundRiskBufferRadius = 3 * vm + vm * Math.sqrt((2 * height) / 9.89) 
+    let geographyVolumeRadius : number = geographyVolume / 2
+    let geoFenceRadius : number = 5
+    let hardFenceRadius : number = 5
+    let groundRiskBufferRadius = 3 * vm + vm * Math.sqrt((2 * height) / 9.81) 
 
+    console.log("Geography volume radius : ", geographyVolumeRadius)
+    console.log("GeoFence radius : ", geoFenceRadius)
+    console.log("HardFence radius : ", hardFenceRadius)
+    console.log("Ground Risk Buffer radius : ", groundRiskBufferRadius)
+    console.log("Total radius : ", geographyVolumeRadius
+		+ geoFenceRadius
+		+ hardFenceRadius
+		+ groundRiskBufferRadius)
+    
     if (geographyCircle !== null) geographyCircle.setMap(null)
     if (geoFenceCircle !== null) geoFenceCircle.setMap(null)
     if (hardFenceCircle !== null) hardFenceCircle.setMap(null)
