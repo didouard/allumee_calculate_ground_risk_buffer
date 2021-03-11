@@ -135,13 +135,15 @@ function addCircle(location: google.maps.LatLngLiteral, map: google.maps.Map) {
     height = Number($("#inputMaxHeight").val())
     geographyVolume = Number($("#inputGeographyVolume").val())
 
-    let vm = 12 + wind / 3.6
+    let vm = 14 + wind / 3.6
 
     let geographyVolumeRadius : number = geographyVolume / 2
     let geoFenceRadius : number = 5
     let hardFenceRadius : number = 5
     let groundRiskBufferRadius = 3 * vm + vm * Math.sqrt((2 * height) / 9.81) 
 
+    console.log("----");
+    console.log("Vitesse max: ", vm)
     console.log("Geography volume radius : ", geographyVolumeRadius)
     console.log("GeoFence radius : ", geoFenceRadius)
     console.log("HardFence radius : ", hardFenceRadius)
