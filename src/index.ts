@@ -1,48 +1,34 @@
-/*
- * Copyright 2019 Google LLC. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//
 
-// This example creates circles on the map, representing populations in North
-// America.
 
-// First, create an object containing LatLng and population for each city.
+var balistic_map : {height : number, balistic : number}[] = [
+{'height':  120 , 'balistic':  54.0563 }
+, {'height':  115 , 'balistic':  52.9629 }
+, {'height':  110 , 'balistic':  51.7958 }
+, {'height':  105 , 'balistic':  50.6206 }
+, {'height':  100 , 'balistic':  49.4006 }
+, {'height':  95 , 'balistic':  48.1321 }
+, {'height':  90 , 'balistic':  46.7703 }
+, {'height':  85 , 'balistic':  45.3905 }
+, {'height':  80 , 'balistic':  43.9484 }
+, {'height':  75 , 'balistic':  42.4381 }
+, {'height':  70 , 'balistic':  40.9021 }
+, {'height':  65 , 'balistic':  39.2366 }
+, {'height':  60 , 'balistic':  37.5342 }
+, {'height':  55 , 'balistic':  35.7358 }
+, {'height':  50 , 'balistic':  33.8915 }
+, {'height':  45 , 'balistic':  31.9991 }
+, {'height':  40 , 'balistic':  29.9875 }
+, {'height':  35 , 'balistic':  27.8406 }
+, {'height':  30 , 'balistic':  25.6976 }
+, {'height':  25 , 'balistic':  23.4004 }
+, {'height':  20 , 'balistic':  20.9251 }
+, {'height':  15 , 'balistic':  18.2417 }
+, {'height':  10 , 'balistic':  15.092 }
+    , {'height':  5 , 'balistic':  10.9759 }
+]
 
-/*interface City {
-  center: google.maps.LatLngLiteral;
-  population: number;
-}
-
-const citymap: Record<string, City> = {
-  chicago: {
-    center: { lat: 41.878, lng: -87.629 },
-    population: 2714856,
-  },
-  newyork: {
-    center: { lat: 40.714, lng: -74.005 },
-    population: 8405837,
-  },
-  losangeles: {
-    center: { lat: 34.052, lng: -118.243 },
-    population: 3857799,
-  },
-  vancouver: {
-    center: { lat: 49.25, lng: -123.1 },
-    population: 603502,
-  },
-};*/
-
+    
 function initMap(): void {
     // Create the map.
     const map = new google.maps.Map(
@@ -122,8 +108,17 @@ function initMap(): void {
     // [END maps_places_searchbox_getplaces]
 }
 
+function calculate_balistic(height: number) {
+    let i : number
+    let previous_balistic : number = balistic_map[0]['balistic']
+
+    for (let balistic of balistic_map) {
+	if (balistic["height"] <= height) return balistic["balistic"]
+    }
+    return 0;
+}
+
 let geographyCircle: google.maps.Circle | null = null;
-let geoFenceCircle: google.maps.Circle | null = null;
 let hardFenceCircle: google.maps.Circle | null = null;
 let groundRiskBufferCircle: google.maps.Circle | null = null;
 function addCircle(location: google.maps.LatLngLiteral, map: google.maps.Map) {
@@ -135,26 +130,24 @@ function addCircle(location: google.maps.LatLngLiteral, map: google.maps.Map) {
     height = Number($("#inputMaxHeight").val())
     geographyVolume = Number($("#inputGeographyVolume").val())
 
-    let vm = 14 + wind / 3.6
+    let vm = 17.7 + wind / 3.6
 
     let geographyVolumeRadius : number = geographyVolume / 2
-    let geoFenceRadius : number = 5
     let hardFenceRadius : number = 5
-    let groundRiskBufferRadius = 3 * vm + vm * Math.sqrt((2 * height) / 9.81) 
+    let balistic = calculate_balistic(height)
+    let groundRiskBufferRadius = 3 * vm + balistic 
 
     console.log("----");
     console.log("Vitesse max: ", vm)
     console.log("Geography volume radius : ", geographyVolumeRadius)
-    console.log("GeoFence radius : ", geoFenceRadius)
     console.log("HardFence radius : ", hardFenceRadius)
+    console.log("balistic :", balistic)
     console.log("Ground Risk Buffer radius : ", groundRiskBufferRadius)
     console.log("Total radius : ", geographyVolumeRadius
-		+ geoFenceRadius
 		+ hardFenceRadius
 		+ groundRiskBufferRadius)
     
     if (geographyCircle !== null) geographyCircle.setMap(null)
-    if (geoFenceCircle !== null) geoFenceCircle.setMap(null)
     if (hardFenceCircle !== null) hardFenceCircle.setMap(null)
     if (groundRiskBufferCircle !== null) groundRiskBufferCircle.setMap(null)
     
@@ -182,19 +175,6 @@ function addCircle(location: google.maps.LatLngLiteral, map: google.maps.Map) {
 	radius: geographyVolume / 2 + 5 + 5,
     });
     google.maps.event.addListener(hardFenceCircle, "click", (event) => {
-	addCircle(event.latLng, map);
-    });
-    geoFenceCircle = new google.maps.Circle({
-	strokeColor: "#FAF36C",
-	strokeOpacity: 0.8,
-	strokeWeight: 2,
-	fillColor: "#FAF36C",
-	fillOpacity: 0.35,
-	map,
-	center: location,
-	radius: geographyVolume / 2 + 5,
-    });
-    google.maps.event.addListener(geoFenceCircle, "click", (event) => {
 	addCircle(event.latLng, map);
     });
     geographyCircle = new google.maps.Circle({
